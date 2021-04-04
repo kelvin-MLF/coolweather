@@ -1,9 +1,9 @@
 package com.kelvin.coolweather.db;
 
 
-import org.litepal.crud.DataSupport;
+import org.litepal.crud.LitePalSupport;
 
-public class Province extends DataSupport {
+public class Province extends LitePalSupport {
     private int id;
     private String provinceName; //记录省的名字
     private int provinceCode; //记录省的代号
