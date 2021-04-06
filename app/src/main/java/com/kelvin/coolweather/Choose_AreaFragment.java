@@ -1,6 +1,7 @@
 package com.kelvin.coolweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import com.kelvin.coolweather.db.City;
 import com.kelvin.coolweather.db.County;
 import com.kelvin.coolweather.db.Province;
+import com.kelvin.coolweather.gson.Weather;
 import com.kelvin.coolweather.util.HttpUtil;
 import com.kelvin.coolweather.util.Utility;
 
@@ -97,6 +99,12 @@ public class Choose_AreaFragment extends Fragment {
                 }else if (currentLevel==LEVEL_CITY){ //当当前选中级别为市
                     selectedCity = cityList.get(position);
                     queryCounties(); //自定义方法 查询选中市内所有的县
+                }else if (currentLevel==LEVEL_COUNTY){
+                    String weatherId = countyList.get(position).getWeatherId();
+                    Intent intent =  new Intent(getActivity(), WeatherActivity.class);
+                    intent.putExtra("weather id",weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -187,6 +195,15 @@ public class Choose_AreaFragment extends Fragment {
     private void queryFromServer(String address,final String type) {
         showProgressDialog();//自定义显示进度对话框方法
         HttpUtil.sendOkHttpRequest(address, new Callback() { //向服务器发送请求
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                //通过runOnUiThread()方法回到主线程处理逻辑
+                getActivity().runOnUiThread(() -> {
+                    closeProgressDialog();
+                    Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
+                });
+            }
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException { //响应的数据会回调到onResponse()方法中
                 String responseText = response.body().string();
@@ -199,34 +216,18 @@ public class Choose_AreaFragment extends Fragment {
                     result = Utility.handleCountyResponse(responseText,selectedCity.getId());//使用自定义的Utility类中的对市JSON数据的解析方法
                 }
                 if (result){
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            closeProgressDialog();//自定义关闭进度对话框方法
-                            if ("province".equals(type)){
-                                queryProvinces();
-                            }else if ("city".equals(type)){
-                                queryCities();
-                            }else if ("county".equals(type)){
-                                queryCounties();
-                            }
+                    getActivity().runOnUiThread(() -> {
+                        closeProgressDialog();//自定义关闭进度对话框方法
+                        if ("province".equals(type)){
+                            queryProvinces();
+                        }else if ("city".equals(type)){
+                            queryCities();
+                        }else if ("county".equals(type)){
+                            queryCounties();
                         }
                     });
                 }
             }
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                //通过runOnUiThread()方法回到主线程处理逻辑
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        closeProgressDialog();
-                        Toast.makeText(getContext(),"加载失败",Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-
         });
     }
 
